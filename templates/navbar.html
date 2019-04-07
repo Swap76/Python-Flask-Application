@@ -1,0 +1,39 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+  <a class="navbar-brand" style="color:#9a41f4; border-right: 2px solid white; padding-right: 10px; margin-right: 10px" href="/">BlogBook</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" style="color:#41d6f4" href="/">House <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" style="color:#4161f4" href="/about">About</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" style="color:#f44242" href="/blogs">Blogs</a>
+      </li>
+    </ul>
+    {% if session.logged_in %}
+      <form class="form-inline my-2 my-lg-0">
+       <a class="btn btn-outline-success my-2 my-sm-0" href="/dashboard">Dashboard</a>
+      </form>
+      <span>&nbsp;&nbsp;&nbsp;</span>
+      <form class="form-inline my-2 my-lg-0">
+       <a class="btn btn-outline-success my-2 my-sm-0" href="/logout">Logout</a>
+      </form>
+    {% else %}
+      <form class="form-inline my-2 my-lg-0">
+       <a class="btn btn-outline-success my-2 my-sm-0" href="/login">Login</a>
+      </form>
+      <span>&nbsp;&nbsp;&nbsp;</span>
+      <form class="form-inline my-2 my-lg-0">
+       <a class="btn btn-outline-success my-2 my-sm-0" href="/register">Register</a>
+      </form>
+    {% endif %}
+  </div>
+</div>
+</nav>

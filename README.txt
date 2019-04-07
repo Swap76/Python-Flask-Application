@@ -1,4 +1,4 @@
-### Dependecies
+### Dependencies
 
 - Python
 - Python-Flask

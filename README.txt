@@ -23,3 +23,7 @@
 mysql:
 - mysql -u root -p
 - grant all privileges on *.* to root@localhost identified by 'mypassword' with grant option;
+
+
+### RUN
+-python app.py

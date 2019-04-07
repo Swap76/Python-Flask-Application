@@ -7,7 +7,7 @@
 - MySQL
 - HTML
 - BootStrap
-
+- CKEditor 
 
 
 ### Commands used

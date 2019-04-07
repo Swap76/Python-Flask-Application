@@ -2,7 +2,6 @@ from flask import Flask, render_template, flash, redirect, url_for, session, log
 from flask_mysqldb import MySQL
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
-from data import Blogs
 from functools import wraps
 
 app=Flask(__name__)
@@ -15,8 +14,6 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
-Blogs = Blogs()
-
 @app.route('/')
 def house():
 	return render_template('house.html')
@@ -27,11 +24,32 @@ def about():
 
 @app.route('/blogs')
 def blogs():
-	return render_template('blogs.html',blogs = Blogs)
+	cur = mysql.connection.cursor()
+	result = cur.execute("SELECT * FROM blogs")
+	blogs = cur.fetchall()
+
+	if result > 0:
+		return render_template('blogs.html', blogs=blogs)
+	else:
+		msg = "No Blogs Available!"
+		return render_template('blogs.html', msg=msg)
+
+	cur.close()
 
 @app.route('/blog/<string:id>/')
 def blog(id):
-	return render_template('blog.html',blogs = Blogs,id=int(id))
+	cur = mysql.connection.cursor()
+	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
+	blog = cur.fetchone()
+
+	if result > 0:
+		return render_template('blog.html', blog=blog)
+	else:
+		error = "No Such Blog!"
+		return render_template('blog.html', error=error)
+
+	cur.close()
+
 
 class RegisterForm(Form):
 	name = StringField('Name',[validators.DataRequired(), validators.Length(min=1,max=50)])
@@ -104,6 +122,8 @@ def login():
 			error="No Such User"
 			return render_template('login.html',error=error)
 
+		cur.close()
+
 	return render_template('login.html')	
 
 def is_logged_in(f):
@@ -126,7 +146,45 @@ def logout():
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
-	return render_template('dashboard.html')
+	cur = mysql.connection.cursor()
+	current_user = session['username']
+	result = cur.execute("SELECT * FROM blogs WHERE author=%s",[current_user])
+	blogs = cur.fetchall()
+
+	if result > 0:
+		return render_template('dashboard.html', blogs=blogs)
+	else:
+		msg = "You haven't written any blogs yet!"
+		return render_template('dashboard.html', msg=msg)
+
+	cur.close()
+
+class BlogForm(Form):
+	title = StringField('Title',[validators.DataRequired(), validators.Length(min=1,max=250)])
+	body = TextAreaField('Body',[validators.DataRequired(), validators.Length(min=5)])
+
+@app.route('/create_blog',methods=['GET','POST'])
+@is_logged_in
+def create_blog():
+	form = BlogForm(request.form)
+	if request.method == 'POST' and form.validate():
+		title = form.title.data
+		body = form.body.data
+
+		cur = mysql.connection.cursor()
+
+		cur.execute("INSERT INTO blogs(title, body, author) VALUES(%s,%s,%s)",(title, body, session['username']))
+
+		mysql.connection.commit()
+
+		cur.close()
+
+		flash('Blog Created!','success')
+
+		return redirect(url_for('dashboard'))
+
+	return render_template('create_blog.html', form=form)
+
 
 if __name__=='__main__':
 	app.secret_key = 'kittensforever'

@@ -154,7 +154,7 @@ def dashboard():
 	if result > 0:
 		return render_template('dashboard.html', blogs=blogs)
 	else:
-		msg = "You haven't written any blogs yet!"
+		msg = "You have no written blogs!"
 		return render_template('dashboard.html', msg=msg)
 
 	cur.close()
@@ -201,7 +201,6 @@ def edit_blog(id):
 
 	blog=cur.fetchone()
 
-
 	form = BlogForm(request.form)
 
 	form.title.data = blog['title']
@@ -231,6 +230,37 @@ def edit_blog(id):
 		return redirect(url_for('dashboard'))
 
 	return render_template('edit_blog.html', form=form)
+
+@app.route('/delete_blog/<string:id>',methods=['POST'])
+@is_logged_in
+def delete_blog(id):
+
+	cur = mysql.connection.cursor()
+
+	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
+
+	if result <= 0:
+		cur.close()
+		flash('No such Blog exists!','danger')
+		return redirect(url_for('dashboard'))
+
+	blog=cur.fetchone()
+
+	if blog['author'] != session['username']:
+		cur.close()
+		flash('You don\'t own this Blog!','danger')
+		return redirect(url_for('dashboard'))
+
+	result = cur.execute("DELETE FROM blogs WHERE id = %s",[id])
+	
+	mysql.connection.commit()
+
+	cur.close()
+
+	flash('Blog Deleted!','success')
+	return redirect(url_for('dashboard'))
+		
+
 
 
 if __name__=='__main__':

@@ -40,13 +40,13 @@ def blogs():
 def blog(id):
 	cur = mysql.connection.cursor()
 	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
-	blog = cur.fetchone()
 
 	if result > 0:
+		blog = cur.fetchone()
 		return render_template('blog.html', blog=blog)
 	else:
-		error = "No Such Blog!"
-		return render_template('blog.html', error=error)
+		flash('No such Blog!','danger')
+		return redirect(url_for('blogs'))
 
 	cur.close()
 
@@ -184,6 +184,53 @@ def create_blog():
 		return redirect(url_for('dashboard'))
 
 	return render_template('create_blog.html', form=form)
+
+
+@app.route('/edit_blog/<string:id>',methods=['GET','POST'])
+@is_logged_in
+def edit_blog(id):
+
+	cur = mysql.connection.cursor()
+
+	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
+
+	if result <= 0:
+		cur.close()
+		flash('No such Blog exists!','danger')
+		return redirect(url_for('dashboard'))
+
+	blog=cur.fetchone()
+
+
+	form = BlogForm(request.form)
+
+	form.title.data = blog['title']
+	form.body.data = blog['body']
+
+	cur.close()
+
+	if blog['author'] == session['username']:
+		if request.method == 'POST' and form.validate():
+			title = request.form['title']
+			body = request.form['body']
+
+			cur = mysql.connection.cursor()
+
+			cur.execute("UPDATE blogs SET title=%s, body=%s WHERE id=%s",(title, body, id))
+
+			mysql.connection.commit()
+
+			cur.close()
+
+			flash('Blog Updated!','success')
+
+			return redirect(url_for('dashboard'))
+
+	else:
+		flash('You do not own this Blog!','danger')
+		return redirect(url_for('dashboard'))
+
+	return render_template('edit_blog.html', form=form)
 
 
 if __name__=='__main__':

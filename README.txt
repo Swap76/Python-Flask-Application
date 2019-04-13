@@ -27,3 +27,9 @@ mysql:
 
 ### RUN
 - python app.py
+
+### SQL Database
+- CREATE DATABASE BlogBook;
+- USE BlogBook;
+- CREATE TABLE users(id INT(11) AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), username VARCHAR(30), email VARCHAR(50), password VARCHAR(100), register_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+- CREATE TABLE blogs(id INT(11) AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), author VARCHAR(100), body TEXT, create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

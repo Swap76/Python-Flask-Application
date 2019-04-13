@@ -18,6 +18,7 @@ passlib==1.7.1
 psycopg2-binary==2.8.1
 pycrypto==2.6.1
 pygobject==3.26.1
+python-dotenv==0.10.1
 pyxdg==0.25
 SecretStorage==2.3.1
 six==1.11.0

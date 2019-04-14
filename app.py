@@ -3,16 +3,19 @@ from flask_mysqldb import MySQL
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators
 from passlib.hash import sha256_crypt
 from functools import wraps
+import os
+import psycopg2
+from psycopg2.extras import Json, DictCursor
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app=Flask(__name__)
 
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'kittensforever'
-app.config['MYSQL_DB'] = 'BlogBook'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-
-mysql = MySQL(app)
+conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 @app.route('/')
 def house():
@@ -24,11 +27,11 @@ def about():
 
 @app.route('/blogs')
 def blogs():
-	cur = mysql.connection.cursor()
-	result = cur.execute("SELECT * FROM blogs")
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+	result = cur.execute('SELECT * FROM blogs')
 	blogs = cur.fetchall()
 
-	if result > 0:
+	if blogs:
 		return render_template('blogs.html', blogs=blogs)
 	else:
 		msg = "No Blogs Available!"
@@ -38,18 +41,17 @@ def blogs():
 
 @app.route('/blog/<string:id>/')
 def blog(id):
-	cur = mysql.connection.cursor()
-	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+	result = cur.execute('SELECT * FROM blogs WHERE id=%s',[id])
+	blog = cur.fetchone()
 
-	if result > 0:
-		blog = cur.fetchone()
+	if blog:
 		return render_template('blog.html', blog=blog)
 	else:
 		flash('No such Blog!','danger')
 		return redirect(url_for('blogs'))
 
 	cur.close()
-
 
 class RegisterForm(Form):
 	name = StringField('Name',[validators.DataRequired(), validators.Length(min=1,max=50)])
@@ -78,11 +80,11 @@ def register():
 		username=form.username.data
 		password=sha256_crypt.encrypt(str(form.password.data))
 
-		cur=mysql.connection.cursor()
+		cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-		cur.execute("INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)",(name, email, username, password))
+		cur.execute('INSERT INTO users(name, email, username, password) VALUES(%s, %s, %s, %s)',(name, email, username, password))
 
-		mysql.connection.commit()
+		conn.commit()
 
 		cur.close()
 
@@ -99,27 +101,23 @@ def login():
 		username=request.form['username']
 		password_tried=request.form['password']
 
-		cur = mysql.connection.cursor()
 
-		result = cur.execute("SELECT * FROM users WHERE username=%s",[username])
+		cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-		if result > 0:
-			data = cur.fetchone()
-			password = data['password']
+		cur.execute('SELECT * FROM users WHERE username=%s',[username])
 
-			if sha256_crypt.verify(password_tried, password):
-				session['logged_in'] = True
-				session['username'] = username
+		data = cur.fetchone()
+		password = data['password']
 
-				flash('You are now logged in and ready to write blogs!','success')
-				return redirect(url_for('dashboard'))
+		if sha256_crypt.verify(password_tried, password):
+			session['logged_in'] = True
+			session['username'] = username
 
-			else:
-				error = "Password Not Matched"
-				return render_template('login.html',error=error)
+			flash('You are now logged in and ready to write blogs!','success')
+			return redirect(url_for('dashboard'))
 
 		else:
-			error="No Such User"
+			error = "Password Not Matched"
 			return render_template('login.html',error=error)
 
 		cur.close()
@@ -146,12 +144,12 @@ def logout():
 @app.route('/dashboard')
 @is_logged_in
 def dashboard():
-	cur = mysql.connection.cursor()
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 	current_user = session['username']
-	result = cur.execute("SELECT * FROM blogs WHERE author=%s",[current_user])
+	result = cur.execute('SELECT * FROM blogs WHERE author=%s',[current_user])
 	blogs = cur.fetchall()
 
-	if result > 0:
+	if blogs:
 		return render_template('dashboard.html', blogs=blogs)
 	else:
 		msg = "You have no written blogs!"
@@ -171,11 +169,11 @@ def create_blog():
 		title = form.title.data
 		body = form.body.data
 
-		cur = mysql.connection.cursor()
+		cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-		cur.execute("INSERT INTO blogs(title, body, author) VALUES(%s,%s,%s)",(title, body, session['username']))
+		cur.execute('INSERT INTO blogs(title, body, author) VALUES(%s,%s,%s)',(title, body, session['username']))
 
-		mysql.connection.commit()
+		conn.commit()
 
 		cur.close()
 
@@ -190,16 +188,17 @@ def create_blog():
 @is_logged_in
 def edit_blog(id):
 
-	cur = mysql.connection.cursor()
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
-
-	if result <= 0:
-		cur.close()
-		flash('No such Blog exists!','danger')
-		return redirect(url_for('dashboard'))
+	result = cur.execute('SELECT * FROM blogs WHERE id=%s',[id])
 
 	blog=cur.fetchone()
+
+	if not blog:
+		cur.close()
+
+		flash('No such Blog exists!','danger')
+		return redirect(url_for('dashboard'))
 
 	form = BlogForm(request.form)
 
@@ -213,11 +212,11 @@ def edit_blog(id):
 			title = request.form['title']
 			body = request.form['body']
 
-			cur = mysql.connection.cursor()
+			cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-			cur.execute("UPDATE blogs SET title=%s, body=%s WHERE id=%s",(title, body, id))
+			cur.execute('UPDATE blogs SET title=%s, body=%s WHERE id=%s',(title, body, id))
 
-			mysql.connection.commit()
+			conn.commit()
 
 			cur.close()
 
@@ -235,25 +234,27 @@ def edit_blog(id):
 @is_logged_in
 def delete_blog(id):
 
-	cur = mysql.connection.cursor()
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-	result = cur.execute("SELECT * FROM blogs WHERE id=%s",[id])
-
-	if result <= 0:
-		cur.close()
-		flash('No such Blog exists!','danger')
-		return redirect(url_for('dashboard'))
+	result = cur.execute('SELECT * FROM blogs WHERE id=%s',[id])
 
 	blog=cur.fetchone()
 
+	if not blog:
+		cur.close()
+
+		flash('No such Blog exists!','danger')
+		return redirect(url_for('dashboard'))
+
 	if blog['author'] != session['username']:
 		cur.close()
+
 		flash('You don\'t own this Blog!','danger')
 		return redirect(url_for('dashboard'))
 
-	result = cur.execute("DELETE FROM blogs WHERE id = %s",[id])
+	result = cur.execute('DELETE FROM blogs WHERE id = %s',[id])
 	
-	mysql.connection.commit()
+	conn.commit()
 
 	cur.close()
 
@@ -261,8 +262,46 @@ def delete_blog(id):
 	return redirect(url_for('dashboard'))
 		
 
+def create_tables():
+	commands = (
+		"""
+		CREATE TABLE users(
+			id SERIAL PRIMARY KEY, 
+			name VARCHAR (100) UNIQUE NOT NULL, 
+			username VARCHAR (30) UNIQUE NOT NULL, 
+			email VARCHAR (50) UNIQUE NOT NULL, 
+			password VARCHAR (100) NOT NULL, 
+			register_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		""",
+		"""
+		CREATE TABLE blogs(
+			id SERIAL PRIMARY KEY, 
+			title VARCHAR (255) UNIQUE NOT NULL, 
+			author VARCHAR (100) NOT NULL, 
+			body TEXT NOT NULL, 
+			create_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		"""
+	)
+	DATABASE_URL = os.getenv("DATABASE_URL")
+	conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+	for command in commands:
+		cur.execute(command)
+	conn.commit()
+	cur.close()
 
+def rollback():
+	DATABASE_URL = os.getenv("DATABASE_URL")
+	conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+	cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+	cur.execute("ROLLBACK")
+	conn.commit()
+	cur.close()
 
 if __name__=='__main__':
+	# create_tables()
+	rollback()
 	app.secret_key = 'kittensforever'
 	app.run(debug=1)

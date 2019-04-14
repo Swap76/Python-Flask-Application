@@ -3,7 +3,6 @@ Click==7.0
 cryptography==2.1.4
 enum34==1.1.6
 Flask==1.0.2
-Flask-MySQLdb==0.2.0
 Flask-WTF==0.14.2
 gunicorn==19.9.0
 idna==2.6
@@ -13,11 +12,10 @@ Jinja2==2.10
 keyring==10.6.0
 keyrings.alt==3.0
 MarkupSafe==1.1.1
-mysqlclient==1.4.2.post1
 passlib==1.7.1
 psycopg2-binary==2.8.1
 pycrypto==2.6.1
-pygobject==3.26.1
+pygobject==3.27.0
 python-dotenv==0.10.1
 pyxdg==0.25
 SecretStorage==2.3.1

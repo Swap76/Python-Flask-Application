@@ -99,7 +99,7 @@ def login():
 	if request.method == 'POST':
 		username=request.form['username']
 		password_tried=request.form['password']
-
+		app.secret_key = 'kittensforever'
 
 		cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -126,6 +126,7 @@ def login():
 def is_logged_in(f):
 	@wraps(f)
 	def wrap(*args, **kwargs):
+		app.secret_key = 'kittensforever'
 		if 'logged_in' in session:
 			return f(*args, **kwargs)
 		else:

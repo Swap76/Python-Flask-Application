@@ -1,3 +1,6 @@
+### Master Branch of this project is on continoues Deploy Through Heroku On https://blogbook--6976.herokuapp.com/
+
+
 ### Dependencies
 
 - Python
@@ -20,10 +23,11 @@
 - pip install Flask-WTF
 - pip install passlib
 
-mysql:
+### mysql: In Rahul's Laptop
 - mysql -u root -p
 - grant all privileges on *.* to root@localhost identified by 'mypassword' with grant option;
 
+### Postgress In Swapnil's Computer and On Server
 
 ### RUN
 - python app.py

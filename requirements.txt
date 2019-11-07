@@ -19,5 +19,5 @@ python-dotenv==0.10.1
 pyxdg==0.25
 SecretStorage==2.3.1
 six==1.11.0
-Werkzeug==0.15.1
+Werkzeug==0.15.3
 WTForms==2.2.1

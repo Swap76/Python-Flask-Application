@@ -1,5 +1,4 @@
-### Master Branch of this project is on continoues Deploy Through Heroku On https://blogbook--6976.herokuapp.com/
-
+# Python Flask Application 
 
 ### Dependencies
 
